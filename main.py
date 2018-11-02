@@ -215,6 +215,8 @@ class LabelTool():
             with open(self.labelfilename) as f:
                 boxes = []
 
+                # if self.label_mode == LabelMode.json_single:  # Label mode supporting a single json file
+                #     pass
                 if self.label_mode == LabelMode.json:
                     # TODO: box calculation
                     print("Loading labels from json file")
@@ -228,13 +230,13 @@ class LabelTool():
                         x_1, y_1, x_2, y_2 = self.xywh_to_xy(x,y,w,h)
 
                         # Map to this format to ensure compatability with box display GUI code
-                        # TODO: Rounding errors (also in original code)
+                        # TODO: Fix rounding errors (also in original code)
                         tmp = [int(x_1/self.factor), int(y_1/self.factor), int(x_2/self.factor), int(y_2/self.factor), region["phrase"]]
                         boxes.append(tmp)
 
                         print("Region coordinates with w/h    : x: {}, y: {},  w:{},  h:{}".format(x, y, w, h))
-                        print("Region coordinates in image    : x: {}, y: {}, x2:{}, y2:{}".format(x_1, y_1, x_2, y_2))
-                        print("Region coordinates in GUI coord: x: {}, y: {}, x2:{}, y2:{}".format(tmp[0], tmp[1], tmp[2], tmp[3]))
+                        # print("Region coordinates in image    : x: {}, y: {}, x2:{}, y2:{}".format(x_1, y_1, x_2, y_2))
+                        # print("Region coordinates in GUI coord: x: {}, y: {}, x2:{}, y2:{}".format(tmp[0], tmp[1], tmp[2], tmp[3]))
                 else:
                     print("Loading labels from plain text file")
                     for (i, line) in enumerate(f):
@@ -248,13 +250,13 @@ class LabelTool():
                 for box in boxes:
                     self.bboxList.append(tuple(box))
                     color_index = (len(self.bboxList)-1) % len(COLORS)
-                    tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
-                                                            tmp[2], tmp[3], \
+                    tmpId = self.mainPanel.create_rectangle(box[0], box[1], \
+                                                            box[2], box[3], \
                                                             width = 2, \
                                                             outline = COLORS[color_index])
                                                             #outline = COLORS[(len(self.bboxList)-1) % len(COLORS)])
                     self.bboxIdList.append(tmpId)
-                    self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' %(tmp[4], tmp[0], tmp[1], tmp[2], tmp[3]))
+                    self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' %(box[4], box[0], box[1], box[2], box[3]))
                     self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[color_index])
 
     def saveImage(self):
@@ -313,6 +315,7 @@ class LabelTool():
 
     def mouseMove(self, event):
         self.disp.config(text = 'x: %d, y: %d' %(event.x, event.y))
+
         if self.tkimg:
             if self.hl:
                 self.mainPanel.delete(self.hl)
@@ -396,6 +399,10 @@ class LabelTool():
 def arg_parser():
     parser = argparse.ArgumentParser("BBox Tool GUI")
     parser.add_argument("-l", "--label-mode", help="Specifies the label format. ", type=LabelMode, choices=list(LabelMode), default=LabelMode.plain)
+
+    # TODO: Add abbility to read and write annontations from single json file (similar to Visual Genome)
+    # TODO: Add folder parameter for label and image folder
+
     return parser
 
 
