@@ -1,19 +1,36 @@
+import json
+import os
+import glob
+import random
+import argparse
+import uuid
+from enum import Enum
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import ttk
 from PIL import Image, ImageTk
-import os
-import glob
-import random
+
+
+class LabelMode(Enum):
+    plain = "plain"
+    json = "json"
+
+    def __str__(self):
+        return self.value
+
 
 # colors for the bboxes
-COLORS = ['red', 'blue','pink', 'cyan', 'green', 'black']
+COLORS = ['red', 'blue', 'pink', 'cyan', 'green', 'black']
 # image sizes for the examples
 SIZE = 256, 256
 
+LABEL_MODE = LabelMode.plain
+LABEL_FILE_FORMAT = {LabelMode.json: ".json", LabelMode.plain: ".txt"}
+
+
 class LabelTool():
-    def __init__(self, master):
+    def __init__(self, master, label_mode=LabelMode.plain):
         # set up the main frame
         self.parent = master
         self.parent.title("LabelTool")
@@ -32,6 +49,7 @@ class LabelTool():
         self.category = 0
         self.imagename = ''
         self.labelfilename = ''
+        self.label_mode = label_mode
         self.tkimg = None
         self.currentLabelclass = ''
         self.cla_can_temp = []
@@ -190,22 +208,45 @@ class LabelTool():
         #self.imagename = os.path.split(imagepath)[-1].split('.')[0]
         fullfilename = os.path.basename(imagepath)
         self.imagename, _ = os.path.splitext(fullfilename)
-        labelname = self.imagename + '.txt'
+        labelname = self.imagename + LABEL_FILE_FORMAT[self.label_mode]
         self.labelfilename = os.path.join(self.outDir, labelname)
         bbox_cnt = 0
         if os.path.exists(self.labelfilename):
             with open(self.labelfilename) as f:
-                for (i, line) in enumerate(f):
-                    if i == 0:
-                        bbox_cnt = int(line.strip())
-                        continue
-                    #tmp = [int(t.strip()) for t in line.split()]
-                    tmp = line.split()
-                    tmp[0] = int(int(tmp[0])/self.factor)
-                    tmp[1] = int(int(tmp[1])/self.factor)
-                    tmp[2] = int(int(tmp[2])/self.factor)
-                    tmp[3] = int(int(tmp[3])/self.factor)
-                    self.bboxList.append(tuple(tmp))
+                boxes = []
+
+                if self.label_mode == LabelMode.json:
+                    # TODO: box calculation
+                    print("Loading labels from json file")
+                    # boxes.append()
+                    regions = json.load(f)["regions"]
+                    for region in regions:
+                        x = region["x"]
+                        y = region["y"]
+                        w = region["width"]
+                        h = region["height"]
+                        x_1, y_1, x_2, y_2 = self.xywh_to_xy(x,y,w,h)
+
+                        # Map to this format to ensure compatability with box display GUI code
+                        # TODO: Rounding errors (also in original code)
+                        tmp = [int(x_1/self.factor), int(y_1/self.factor), int(x_2/self.factor), int(y_2/self.factor), region["phrase"]]
+                        boxes.append(tmp)
+
+                        print("Region coordinates with w/h    : x: {}, y: {},  w:{},  h:{}".format(x, y, w, h))
+                        print("Region coordinates in image    : x: {}, y: {}, x2:{}, y2:{}".format(x_1, y_1, x_2, y_2))
+                        print("Region coordinates in GUI coord: x: {}, y: {}, x2:{}, y2:{}".format(tmp[0], tmp[1], tmp[2], tmp[3]))
+                else:
+                    print("Loading labels from plain text file")
+                    for (i, line) in enumerate(f):
+                        tmp = line.split()
+                        tmp[0] = int(int(tmp[0])/self.factor)
+                        tmp[1] = int(int(tmp[1])/self.factor)
+                        tmp[2] = int(int(tmp[2])/self.factor)
+                        tmp[3] = int(int(tmp[3])/self.factor)
+                        boxes.append(tmp)
+
+                for box in boxes:
+                    self.bboxList.append(tuple(box))
                     color_index = (len(self.bboxList)-1) % len(COLORS)
                     tmpId = self.mainPanel.create_rectangle(tmp[0], tmp[1], \
                                                             tmp[2], tmp[3], \
@@ -215,19 +256,44 @@ class LabelTool():
                     self.bboxIdList.append(tmpId)
                     self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' %(tmp[4], tmp[0], tmp[1], tmp[2], tmp[3]))
                     self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[color_index])
-                    #self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
     def saveImage(self):
         if self.labelfilename == '':
             return
+
         with open(self.labelfilename, 'w') as f:
-            f.write('%d\n' %len(self.bboxList))
-            for bbox in self.bboxList:
-                f.write("{} {} {} {} {}\n".format(int(int(bbox[0])*self.factor),
-                                                int(int(bbox[1])*self.factor),
-                                                int(int(bbox[2])*self.factor),
-                                                int(int(bbox[3])*self.factor), bbox[4]))
-                #f.write(' '.join(map(str, bbox)) + '\n')
+            if self.label_mode == LabelMode.json:
+                regions = []
+                for bbox in self.bboxList:
+                    x_1 = int(int(bbox[0]) * self.factor)
+                    y_1 = int(int(bbox[1]) * self.factor)
+                    x_2 = int(int(bbox[2]) * self.factor)
+                    y_2 = int(int(bbox[3]) * self.factor)
+
+                    x, y, w, h = self.xy_to_xywh(x_1, y_1, x_2, y_2)
+
+                    label  = bbox[4]
+
+                    region = {
+                        "id": str(uuid.uuid4()),
+                        "image": self.imagename,
+                        "x": x,
+                        "y": y,
+                        "width": w,
+                        "height": h,
+                        "phrase": label
+                    }
+                    regions.append(region)
+                json.dump({"regions": regions}, f)
+            else:
+                # f.write('%d\n' %len(self.bboxList))
+                for bbox in self.bboxList:
+                    f.write("{} {} {} {} {}\n".format(int(int(bbox[0])*self.factor),
+                                                    int(int(bbox[1])*self.factor),
+                                                    int(int(bbox[2])*self.factor),
+                                                    int(int(bbox[3])*self.factor),
+                                                      bbox[4]))
+                    #f.write(' '.join(map(str, bbox)) + '\n')
         print('Image No. %d saved' %(self.cur))
 
 
@@ -237,6 +303,7 @@ class LabelTool():
         else:
             x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
             y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
+
             self.bboxList.append((x1, y1, x2, y2, self.currentLabelclass))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
@@ -309,8 +376,36 @@ class LabelTool():
         self.currentLabelclass = self.classcandidate.get()
         print('set label class to : %s' % self.currentLabelclass)
 
+    def xy_to_xywh(self, x_1, y_1, x_2, y_2):
+        """
+        Convert bounding box between two coordinates to xy coordinates with height and width.
+        """
+        w = x_2 - x_1
+        h = y_2 - y_1
+        return x_1, y_1, w, h
+
+    def xywh_to_xy(self, x, y, w, h):
+        """
+        Convert bounding box with width/height to two coordinates
+        """
+        x_2 = x + w
+        y_2 = y + h
+        return x, y, x_2, y_2
+
+
+def arg_parser():
+    parser = argparse.ArgumentParser("BBox Tool GUI")
+    parser.add_argument("-l", "--label-mode", help="Specifies the label format. ", type=LabelMode, choices=list(LabelMode), default=LabelMode.plain)
+    return parser
+
+
 if __name__ == '__main__':
+    parser = arg_parser()
+    args = parser.parse_args()
+
+    print("Starting with label mode {}".format(args.label_mode))
+
     root = Tk()
-    tool = LabelTool(root)
+    tool = LabelTool(root, label_mode=args.label_mode)
     root.resizable(width =  True, height = True)
     root.mainloop()
