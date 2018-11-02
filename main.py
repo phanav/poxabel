@@ -105,16 +105,11 @@ class LabelTool():
 
         # choose class
         self.classname = StringVar()
-        self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
+        # self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
+        self.classcandidate = ttk.Entry(self.frame, textvariable=self.classname)
         self.classcandidate.grid(row=2, column=2)
-        if os.path.exists(self.classcandidate_filename):
-            with open(self.classcandidate_filename) as cf:
-                for line in cf.readlines():
-                    self.cla_can_temp.append(line.strip('\n'))
-        self.classcandidate['values'] = self.cla_can_temp
-        self.classcandidate.current(0)
         self.currentLabelclass = self.classcandidate.get()
-        self.btnclass = Button(self.frame, text='ComfirmClass', command=self.setClass)
+        self.btnclass = Button(self.frame, text='Set label', command=self.setLabel)
         self.btnclass.grid(row=2, column=3, sticky=W+E)
 
         # showing bbox info & delete bbox
@@ -234,7 +229,7 @@ class LabelTool():
                         tmp = [int(x_1/self.factor), int(y_1/self.factor), int(x_2/self.factor), int(y_2/self.factor), region["phrase"]]
                         boxes.append(tmp)
 
-                        print("Region coordinates with w/h    : x: {}, y: {},  w:{},  h:{}".format(x, y, w, h))
+                        # print("Region coordinates with w/h    : x: {}, y: {},  w:{},  h:{}".format(x, y, w, h))
                         # print("Region coordinates in image    : x: {}, y: {}, x2:{}, y2:{}".format(x_1, y_1, x_2, y_2))
                         # print("Region coordinates in GUI coord: x: {}, y: {}, x2:{}, y2:{}".format(tmp[0], tmp[1], tmp[2], tmp[3]))
                 else:
@@ -375,8 +370,22 @@ class LabelTool():
             self.cur = idx
             self.loadImage()
 
-    def setClass(self):
+    def setLabel(self):
         self.currentLabelclass = self.classcandidate.get()
+
+        # Change label of currently selected box
+        sel = self.listbox.curselection()
+        if len(sel) != 1 :
+            return
+        idx = int(sel[0])
+        bbox = self.bboxList.pop(idx)
+        bbox = (bbox[0], bbox[1], bbox[2], bbox[3], self.currentLabelclass)
+        self.bboxList.insert(idx, bbox)
+
+        self.listbox.delete(idx)
+        self.listbox.insert(idx, '%s : (%d, %d) -> (%d, %d)' % (self.currentLabelclass, bbox[0], bbox[1], bbox[2], bbox[3]))
+        self.listbox.itemconfig(idx, fg=COLORS[(idx-1) % len(COLORS)])
+
         print('set label class to : %s' % self.currentLabelclass)
 
     def xy_to_xywh(self, x_1, y_1, x_2, y_2):
