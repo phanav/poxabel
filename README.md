@@ -1,5 +1,8 @@
 BBox-Label-Tool
 ===============
+This is a fork of [xiaqunfeng/BBox-Label-Tool](https://github.com/xiaqunfeng/BBox-Label-Tool) with some added functionallity:
+- Read / write visual genome annotations
+- Allow arbitrary labels instead of pre-defined classes.
 
 A simple tool for labeling object bounding boxes in images, implemented with Python Tkinter.
 
