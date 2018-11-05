@@ -100,9 +100,10 @@ class LabelTool():
         self.mainPanel.bind("<Button-1>", self.mouseClick)
         self.mainPanel.bind("<Motion>", self.mouseMove)
         self.parent.bind("<Escape>", self.cancelBBox)  # press <Espace> to cancel current bbox
-        self.parent.bind("s", self.cancelBBox)
-        self.parent.bind("p", self.prevImage)  # press 'p' to go backforward
-        self.parent.bind("n", self.nextImage)  # press 'n' to go forward
+        # Disable key bindings to allow typing in text box!
+        # self.parent.bind("s", self.cancelBBox)
+        # self.parent.bind("p", self.prevImage)  # press 'p' to go backforward
+        # self.parent.bind("n", self.nextImage)  # press 'n' to go forward
         self.mainPanel.grid(row=2, column=1, rowspan=4, sticky=W + N)
 
         # choose class
@@ -189,6 +190,9 @@ class LabelTool():
         if self.label_mode == LabelMode.json_single_file:
             # Use Visual Genome file name for now
             self.labelfilename = os.path.join(self.outDir, "region_descriptions.json")
+            if not os.path.exists(self.labelfilename):
+                open(self.labelfilename, 'a').close()  # create empty file
+
             print("Loading labels for all images from file: {}".format(self.labelfilename))
             self.regions_all_images = self.load_all_regions(self.labelfilename)
 
@@ -274,8 +278,10 @@ class LabelTool():
             for id, regions in self.regions_all_images.items():
                 result.append({"id": id, "regions": regions})
 
+            # Sort by id - same as image_data.json in order for preprocessing to work
+            result = sorted(result, key=lambda x: x["id"])
             with open(self.labelfilename, 'w') as f:
-                json.dump(result, f)
+                json.dump(result, f, indent=4)
         else:
             with open(self.labelfilename, 'w') as f:
                 if self.label_mode == LabelMode.json:
@@ -424,8 +430,10 @@ class LabelTool():
         with open(label_file_name) as f:
             # TODO: Handling of missing file: Create new file
             # TODO: Handling of empty file
-            data = json.load(f)
-
+            try:
+                data = json.load(f)
+            except json.decoder.JSONDecodeError:
+                data = {}
         # Convert list to dict: {id: {regions:{...}}} for easier data manipulation
         for entry in data:
             regions_all_images[entry["id"]] = entry["regions"]
@@ -433,7 +441,7 @@ class LabelTool():
 
     def get_regions_from_bbox_list(self, bboxList):
         regions = []
-        for bbox in bboxList:
+        for idx, bbox in enumerate(bboxList):
             x_1 = int(int(bbox[0]) * self.factor)
             y_1 = int(int(bbox[1]) * self.factor)
             x_2 = int(int(bbox[2]) * self.factor)
@@ -444,7 +452,7 @@ class LabelTool():
             label = bbox[4]
 
             region = {
-                "id": str(uuid.uuid4()),
+                "id": idx,
                 "image": self.imagename,
                 "x": x,
                 "y": y,
