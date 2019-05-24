@@ -53,7 +53,7 @@ class LabelTool():
         self.label_mode = label_mode
         self.regions_all_images = None  # Used as a cache when reading labels from a single JSON file
         self.tkimg = None
-        self.currentLabelclass = ''
+        self.currentCaption = ''
         self.cla_can_temp = []
         self.classcandidate_filename = 'class.txt'
 
@@ -111,9 +111,9 @@ class LabelTool():
         # choose class
         self.classname = StringVar()
         # self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
-        self.classcandidate = ttk.Entry(self.frame, textvariable=self.classname)
-        self.classcandidate.grid(row=2, column=2)
-        self.currentLabelclass = self.classcandidate.get()
+        self.captionText = ttk.Entry(self.frame, textvariable=self.classname)
+        self.captionText.grid(row=2, column=2)
+        self.currentCaption = self.captionText.get()
         self.btnclass = Button(self.frame, text='Set label', command=self.setLabel)
         self.btnclass.grid(row=2, column=3, sticky=W + E)
 
@@ -308,10 +308,11 @@ class LabelTool():
             x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
             y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
 
-            self.bboxList.append((x1, y1, x2, y2, self.currentLabelclass))
+            self.currentCaption = self.captionText.get()
+            self.bboxList.append((x1, y1, x2, y2, self.currentCaption))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' % (self.currentLabelclass, x1, y1, x2, y2))
+            self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' % (self.currentCaption, x1, y1, x2, y2))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
 
             # Select new box in the image
@@ -359,7 +360,6 @@ class LabelTool():
             print("Select box at index %i" % box_index)
 
     def on_list_select(self, event):
-        print("selected")
         w = event.widget
         selected_index = w.curselection()[0]
         self.select_box(selected_index)
@@ -415,7 +415,7 @@ class LabelTool():
             self.loadImage()
 
     def setLabel(self):
-        self.currentLabelclass = self.classcandidate.get()
+        self.currentCaption = self.captionText.get()
 
         # Change label of currently selected box
         sel = self.listbox.curselection()
@@ -423,15 +423,15 @@ class LabelTool():
             return
         idx = int(sel[0])
         bbox = self.bboxList.pop(idx)
-        bbox = (bbox[0], bbox[1], bbox[2], bbox[3], self.currentLabelclass)
+        bbox = (bbox[0], bbox[1], bbox[2], bbox[3], self.currentCaption)
         self.bboxList.insert(idx, bbox)
 
         self.listbox.delete(idx)
         self.listbox.insert(idx,
-                            '%s : (%d, %d) -> (%d, %d)' % (self.currentLabelclass, bbox[0], bbox[1], bbox[2], bbox[3]))
+                            '%s : (%d, %d) -> (%d, %d)' % (self.currentCaption, bbox[0], bbox[1], bbox[2], bbox[3]))
         self.listbox.itemconfig(idx, fg=COLORS[(idx) % len(COLORS)])
 
-        print('set label class to : %s' % self.currentLabelclass)
+        print('set label class to : %s' % self.currentCaption)
 
     def xy_to_xywh(self, x_1,  y_1, x_2, y_2):
         """
