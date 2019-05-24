@@ -22,7 +22,7 @@ class LabelMode(Enum):
 
 
 # colors for the bboxes
-COLORS = ['red', 'blue', 'pink', 'cyan', 'green', 'black']
+COLORS = ['red', 'blue', 'pink', 'cyan', 'green', 'black', 'gray50', 'forest green', 'tomato']
 # image sizes for the examples
 SIZE = 256, 256
 
@@ -68,6 +68,8 @@ class LabelTool():
         self.bboxList = []
         self.hl = None
         self.vl = None
+        self.selected_box = None
+        self.selected_box_index = -1
 
         # ----------------- GUI stuff ---------------------
         # dir entry & load
@@ -120,6 +122,7 @@ class LabelTool():
         self.lb1.grid(row=3, column=2, sticky=W + N)
         self.listbox = Listbox(self.frame, width=22, height=12)
         self.listbox.grid(row=4, column=2, sticky=N + S)
+        self.listbox.bind('<<ListboxSelect>>', self.on_list_select)
         self.btnDel = Button(self.frame, text='Delete', command=self.delBBox)
         self.btnDel.grid(row=4, column=3, sticky=W + E + N)
         self.btnClear = Button(self.frame, text='ClearAll', command=self.clearBBox)
@@ -310,6 +313,9 @@ class LabelTool():
             self.bboxId = None
             self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' % (self.currentLabelclass, x1, y1, x2, y2))
             self.listbox.itemconfig(len(self.bboxIdList) - 1, fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
+
+            # Select new box in the image
+            self.select_box(len(self.bboxList) - 1)
         self.STATE['click'] = 1 - self.STATE['click']
 
     def mouseMove(self, event):
@@ -329,12 +335,42 @@ class LabelTool():
             self.bboxId = self.mainPanel.create_rectangle(self.STATE['x'], self.STATE['y'], \
                                                           event.x, event.y, \
                                                           width=2, \
-                                                          outline=COLORS[len(self.bboxList) % len(COLORS)])
+                                                          outline=COLORS[COLOR_INDEX])
+
+    def select_box(self, box_index=-1):
+        """ Visually selects the currently selected box """
+        bbox = self.bboxList[box_index]
+        self.mainPanel.delete(self.selected_box)
+        self.selected_box_index = -1
+        if box_index < 0:
+            print("Deselect")
+            self.mainPanel.delete(self.selected_box)
+            self.selected_box = None
+            self.selected_box_index = box_index
+        else:
+            self.mainPanel.delete(self.selected_box)
+            x_1 = bbox[0]
+            y_1 = bbox[1]
+            x_2 = bbox[2]
+            y_2 = bbox[3]
+            COLOR_INDEX = box_index % len(COLORS)
+            self.selected_box = self.mainPanel.create_rectangle(x_1, y_1, x_2, y_2, fill=COLORS[COLOR_INDEX], stipple='gray12')
+            self.selected_box_index = box_index
+            print("Select box at index %i" % box_index)
+
+    def on_list_select(self, event):
+        print("selected")
+        w = event.widget
+        selected_index = w.curselection()[0]
+        self.select_box(selected_index)
 
     def cancelBBox(self, event):
         if 1 == self.STATE['click']:
             if self.bboxId:
                 self.mainPanel.delete(self.bboxId)
+                if self.bboxId == self.selected_box_index:
+                    self.mainPanel.delete(self.selected_box)
+                    self.selected_box_index = -1
                 self.bboxId = None
                 self.STATE['click'] = 0
 
@@ -347,6 +383,10 @@ class LabelTool():
         self.bboxIdList.pop(idx)
         self.bboxList.pop(idx)
         self.listbox.delete(idx)
+
+        if idx == self.selected_box_index:
+            self.mainPanel.delete(self.selected_box)
+            self.selected_box_index = -1
 
     def clearBBox(self):
         for idx in range(len(self.bboxIdList)):
@@ -389,11 +429,11 @@ class LabelTool():
         self.listbox.delete(idx)
         self.listbox.insert(idx,
                             '%s : (%d, %d) -> (%d, %d)' % (self.currentLabelclass, bbox[0], bbox[1], bbox[2], bbox[3]))
-        self.listbox.itemconfig(idx, fg=COLORS[(idx - 1) % len(COLORS)])
+        self.listbox.itemconfig(idx, fg=COLORS[(idx) % len(COLORS)])
 
         print('set label class to : %s' % self.currentLabelclass)
 
-    def xy_to_xywh(self, x_1, y_1, x_2, y_2):
+    def xy_to_xywh(self, x_1,  y_1, x_2, y_2):
         """
         Convert bounding box between two coordinates to xy coordinates with height and width.
         """
