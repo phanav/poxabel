@@ -31,7 +31,7 @@ LABEL_FILE_FORMAT = {LabelMode.json: ".json", LabelMode.plain: ".txt", LabelMode
 
 
 class LabelTool():
-    def __init__(self, master, label_mode=LabelMode.plain):
+    def __init__(self, master, label_mode=LabelMode.plain, init_params={}):
         # set up the main frame
         self.parent = master
         self.parent.title("LabelTool")
@@ -40,6 +40,7 @@ class LabelTool():
         self.parent.resizable(width=FALSE, height=FALSE)
 
         # initialize global state
+        self.init_params = init_params
         self.imageDir = ''
         self.imageList = []
         self.egDir = ''
@@ -81,7 +82,7 @@ class LabelTool():
         self.svSourcePath = StringVar()
         self.entrySrc = Entry(self.frame, textvariable=self.svSourcePath)
         self.entrySrc.grid(row=0, column=1, sticky=W + E)
-        self.svSourcePath.set(os.getcwd())
+        self.svSourcePath.set(self.get_init_img_dir())
 
         # load button
         self.ldBtn = Button(self.frame, text="Load Dir", command=self.loadDir)
@@ -95,7 +96,7 @@ class LabelTool():
         self.svDestinationPath = StringVar()
         self.entryDes = Entry(self.frame, textvariable=self.svDestinationPath)
         self.entryDes.grid(row=1, column=1, sticky=W + E)
-        self.svDestinationPath.set(os.path.join(os.getcwd(), "Labels"))
+        self.svDestinationPath.set(self.get_init_label_dir())
 
         # main panel for labeling
         self.mainPanel = Canvas(self.frame, cursor='tcross')
@@ -151,6 +152,16 @@ class LabelTool():
         self.frame.columnconfigure(1, weight=1)
         self.frame.rowconfigure(4, weight=1)
 
+    def get_init_img_dir(self):
+        if 'img_folder' in self.init_params and self.init_params['img_folder'] is not None:
+            return self.init_params['img_folder']
+        return os.getcwd()
+
+    def get_init_label_dir(self):
+        if 'label_folder' in self.init_params and self.init_params['label_folder'] is not None:
+            return self.init_params['label_folder']
+        return os.path.join(os.getcwd(), "Labels")
+
     def selectSrcDir(self):
         path = filedialog.askdirectory(title="Select image source folder", initialdir=self.svSourcePath.get())
         self.svSourcePath.set(path)
@@ -172,7 +183,7 @@ class LabelTool():
 
         extlist = ["*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"]
         for e in extlist:
-            filelist = glob.glob(os.path.join(self.imageDir, e))
+            filelist = sorted(glob.glob(os.path.join(self.imageDir, e)))
             self.imageList.extend(filelist)
         # self.imageList = glob.glob(os.path.join(self.imageDir, '*.JPEG'))
         if len(self.imageList) == 0:
@@ -508,7 +519,10 @@ def arg_parser():
     parser = argparse.ArgumentParser("BBox Tool GUI")
     parser.add_argument("-l", "--label-mode", help="Specifies the label format. ", type=LabelMode,
                         choices=list(LabelMode), default=LabelMode.plain)
-    # TODO: Add folder parameter for label and image folder
+    parser.add_argument("-i", "--input-folder", help="Input folder containing images", type=str,
+                        default=None)
+    parser.add_argument("-o", "--output-folder", help="Output folder for storing labels", type=str,
+                        default=None)
 
     return parser
 
@@ -517,9 +531,16 @@ if __name__ == '__main__':
     parser = arg_parser()
     args = parser.parse_args()
 
+    img_folder = args.input_folder
+    label_folder = args.output_folder
+
+    print("STARTUP")
     print("Starting with label mode {}".format(args.label_mode))
+    print("Loading images from: %s" % img_folder)
+    print("Storing labels to: %s" % label_folder)
+    print("STARTED")
 
     root = Tk()
-    tool = LabelTool(root, label_mode=args.label_mode)
+    tool = LabelTool(root, label_mode=args.label_mode, init_params={"img_folder": img_folder, "label_folder": label_folder})
     root.resizable(width=True, height=True)
     root.mainloop()

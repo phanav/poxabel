@@ -1,5 +1,11 @@
 BBox-Label-Tool
 ===============
+
+Sample run with input and output folder set: 
+```bash
+python main.py -l json_single_file -i "/home/dobrusii/Project/datasets/refexp_val_objects/refexp_data/images/all" -o "/home/dobrusii/Project/datasets/refexp_val_objects/refexp_data/"
+```
+
 This is a fork of [xiaqunfeng/BBox-Label-Tool](https://github.com/xiaqunfeng/BBox-Label-Tool) with some added functionallity:
 - Read / write visual genome annotations
 - Allow arbitrary labels instead of pre-defined classes.
