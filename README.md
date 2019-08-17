@@ -6,6 +6,12 @@ Sample run with input and output folder set:
 python main.py -l json_single_file -i "/home/dobrusii/Project/datasets/refexp_val_objects/refexp_data/images/all" -o "/home/dobrusii/Project/datasets/refexp_val_objects/refexp_data/"
 ```
 
+Run for custom data set:
+```bash
+# Activate virtual env e.g. workon bbox_label
+python main.py -l json_single_file -i "/vol/data/Documents/Uni/Master/2018-WS/Masterproject/datasets/table_objects_dataset/images/all" -o "/vol/data/Documents/Uni/Master/2018-WS/Masterproject/datasets/table_objects_dataset"
+```
+
 This is a fork of [xiaqunfeng/BBox-Label-Tool](https://github.com/xiaqunfeng/BBox-Label-Tool) with some added functionallity:
 - Read / write visual genome annotations
 - Allow arbitrary labels instead of pre-defined classes.
