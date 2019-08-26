@@ -4,7 +4,12 @@ BBox-Label-Tool
 Sample run with input and output folder set: 
 ```bash
 python main.py -l json_single_file -i "/home/dobrusii/Project/datasets/refexp_val_objects/refexp_data/images/all" -o "/home/dobrusii/Project/datasets/refexp_val_objects/refexp_data/"
+
+# Alternative
+python main.py -l json_single_file -i "/home/dobrusii/Project/datasets/table_objects_dataset/images/all" -o "/home/dobrusii/Project/datasets/table_objects_dataset"
 ```
+
+
 
 Run for custom data set:
 ```bash
