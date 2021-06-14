@@ -77,6 +77,7 @@ class LabelTool():
         # input image dir button
         self.srcDirBtn = Button(self.frame, text="Image input folder", command=self.selectSrcDir)
         self.srcDirBtn.grid(row=0, column=0)
+        self.parent.bind("i", self.selectSrcDir)  
 
         # input image dir entry
         self.svSourcePath = StringVar()
@@ -87,10 +88,12 @@ class LabelTool():
         # load button
         self.ldBtn = Button(self.frame, text="Load Dir", command=self.loadDir)
         self.ldBtn.grid(row=0, column=2, rowspan=2, columnspan=2, padx=2, pady=2, ipadx=5, ipady=5)
+        self.parent.bind("l", self.loadDir)  
 
         # label file save dir button
         self.desDirBtn = Button(self.frame, text="Label output folder", command=self.selectDesDir)
         self.desDirBtn.grid(row=1, column=0)
+        self.parent.bind("o", self.selectDesDir)  
 
         # label file save dir entry
         self.svDestinationPath = StringVar()
@@ -105,18 +108,35 @@ class LabelTool():
         self.parent.bind("<Escape>", self.cancelBBox)  # press <Espace> to cancel current bbox
         # Disable key bindings to allow typing in text box!
         # self.parent.bind("s", self.cancelBBox)
-        # self.parent.bind("p", self.prevImage)  # press 'p' to go backforward
-        # self.parent.bind("n", self.nextImage)  # press 'n' to go forward
+        
+        # hotkey to save and load previous image
+        self.parent.bind("<Left>", self.prevImage)  
+        # hotkey to save and load next image
+        self.parent.bind("<Right>", self.nextImage)  
         self.mainPanel.grid(row=2, column=1, rowspan=4, sticky=W + N)
+
+        # # choose class
+        # self.classname = StringVar()
+        # # self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
+        # self.captionText = ttk.Entry(self.frame, textvariable=self.classname)
+        # self.captionText.grid(row=2, column=2)
+        # self.currentCaption = self.captionText.get()
+        # self.btnclass = Button(self.frame, text='Set label', command=self.setLabel)
+        # self.btnclass.grid(row=2, column=3, sticky=W + E)
 
         # choose class
         self.classname = StringVar()
-        # self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
-        self.captionText = ttk.Entry(self.frame, textvariable=self.classname)
-        self.captionText.grid(row=2, column=2)
-        self.currentCaption = self.captionText.get()
-        self.btnclass = Button(self.frame, text='Set label', command=self.setLabel)
-        self.btnclass.grid(row=2, column=3, sticky=W + E)
+        self.classcandidate = ttk.Combobox(self.frame, state='readonly', textvariable=self.classname)
+        self.classcandidate.grid(row=2, column=2)
+        if os.path.exists(self.classcandidate_filename):
+            with open(self.classcandidate_filename) as cf:
+                for line in cf.readlines():
+                    self.cla_can_temp.append(line.strip('\n'))
+        self.classcandidate['values'] = self.cla_can_temp
+        self.classcandidate.current(0)
+        self.currentLabelclass = self.classcandidate.get()
+        self.btnclass = Button(self.frame, text='ComfirmClass', command=self.setClass)
+        self.btnclass.grid(row=2, column=3, sticky=W+E)
 
         # showing bbox info & delete bbox
         self.lb1 = Label(self.frame, text='Bounding boxes:')
@@ -126,6 +146,7 @@ class LabelTool():
         self.listbox.bind('<<ListboxSelect>>', self.on_list_select)
         self.btnDel = Button(self.frame, text='Delete', command=self.delBBox)
         self.btnDel.grid(row=4, column=3, sticky=W + E + N)
+        self.parent.bind("<Delete>", self.delBBox)  
         self.btnClear = Button(self.frame, text='ClearAll', command=self.clearBBox)
         self.btnClear.grid(row=4, column=3, sticky=W + E + S)
 
@@ -162,17 +183,17 @@ class LabelTool():
             return self.init_params['label_folder']
         return os.path.join(os.getcwd(), "Labels")
 
-    def selectSrcDir(self):
+    def selectSrcDir(self, event=None):
         path = filedialog.askdirectory(title="Select image source folder", initialdir=self.svSourcePath.get())
         self.svSourcePath.set(path)
         return
 
-    def selectDesDir(self):
+    def selectDesDir(self, event=None):
         path = filedialog.askdirectory(title="Select label output folder", initialdir=self.svDestinationPath.get())
         self.svDestinationPath.set(path)
         return
 
-    def loadDir(self):
+    def loadDir(self, event=None):
         self.parent.focus()
         # get image list
         # self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
@@ -203,7 +224,8 @@ class LabelTool():
         # Load single label file
         if self.label_mode == LabelMode.json_single_file:
             # Use Visual Genome file name for now
-            self.labelfilename = os.path.join(self.outDir, "region_descriptions.json")
+            self.inputdir = self.imageDir.split(os.path.sep)[-1]
+            self.labelfilename = os.path.join(self.outDir, self.inputdir + "-region.json")
             if not os.path.exists(self.labelfilename):
                 open(self.labelfilename, 'a').close()  # create empty file
 
@@ -230,7 +252,8 @@ class LabelTool():
 
         # self.imagename = os.path.split(imagepath)[-1].split('.')[0]
         fullfilename = os.path.basename(imagepath)
-        self.imagename, _ = os.path.splitext(fullfilename)
+        # self.imagename, _ = os.path.splitext(fullfilename)
+        basepath, self.imagename = os.path.split(fullfilename)
 
         boxes = []
 
@@ -294,8 +317,9 @@ class LabelTool():
 
             # Sort by id - same as image_data.json in order for preprocessing to work
             result = sorted(result, key=lambda x: x["id"])
+            output = dict(inputdir=self.inputdir, annotation=result)
             with open(self.labelfilename, 'w') as f:
-                json.dump(result, f, indent=4)
+                json.dump(output, f, indent=4)
         else:
             with open(self.labelfilename, 'w') as f:
                 if self.label_mode == LabelMode.json:
@@ -312,23 +336,75 @@ class LabelTool():
                         # f.write(' '.join(map(str, bbox)) + '\n')
         print('Image No. %d saved' % (self.cur))
 
+    # def mouseClick(self, event):
+    #     if self.STATE['click'] == 0:
+    #         self.STATE['x'], self.STATE['y'] = event.x, event.y
+    #     else:
+    #         x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
+    #         y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
+
+    #         self.currentCaption = self.captionText.get()
+    #         self.bboxList.append((x1, y1, x2, y2, self.currentCaption))
+    #         self.bboxIdList.append(self.bboxId)
+    #         self.bboxId = None
+    #         self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' % (self.currentCaption, x1, y1, x2, y2))
+    #         self.listbox.itemconfig(len(self.bboxIdList) - 1, fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
+
+    #         # Select new box in the image
+    #         self.select_box(len(self.bboxList) - 1)
+    #     self.STATE['click'] = 1 - self.STATE['click']
+
     def mouseClick(self, event):
         if self.STATE['click'] == 0:
             self.STATE['x'], self.STATE['y'] = event.x, event.y
         else:
-            x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
-            y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
+            # x1, x2 = min(self.STATE['x'], event.x), max(self.STATE['x'], event.x)
+            # y1, y2 = min(self.STATE['y'], event.y), max(self.STATE['y'], event.y)
 
-            self.currentCaption = self.captionText.get()
-            self.bboxList.append((x1, y1, x2, y2, self.currentCaption))
+            x1, x2 = self.STATE['x1'], self.STATE['x2']
+            y1, y2 = self.STATE['y1'], self.STATE['y2']
+
+            self.bboxList.append((x1, y1, x2, y2, self.currentLabelclass))
             self.bboxIdList.append(self.bboxId)
             self.bboxId = None
-            self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' % (self.currentCaption, x1, y1, x2, y2))
-            self.listbox.itemconfig(len(self.bboxIdList) - 1, fg=COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
-
-            # Select new box in the image
-            self.select_box(len(self.bboxList) - 1)
+            self.listbox.insert(END, '%s : (%d, %d) -> (%d, %d)' %(self.currentLabelclass, x1, y1, x2, y2))
+            self.listbox.itemconfig(len(self.bboxIdList) - 1, fg = COLORS[(len(self.bboxIdList) - 1) % len(COLORS)])
         self.STATE['click'] = 1 - self.STATE['click']
+
+    def apply_aspect_ratio(self, x1, y1, x2, y2, aspect_ratio):
+        # width_coeff = aspect_ratio[0] / aspect_ratio[1] if aspect_ratio[0] > aspect_ratio[1] else 1
+        # height_coeff = 1 if aspect_ratio[0] > aspect_ratio[1] else aspect_ratio[1] / aspect_ratio[0]
+        target_width_over_height = aspect_ratio[0] / aspect_ratio[1]
+        # print('aspect ratio: ', width_coeff, height_coeff)
+
+        x1new = min(x1, x2); y1new = min(y1, y2)
+        x2new = max(x1, x2); y2new = max(y1, y2)
+
+        width = x2new - x1new; height = y2new - y1new
+
+        if float(width) / float(height) > target_width_over_height:
+            height = round(width / target_width_over_height)
+            if y2 > y1:
+                y2new = y1new + height
+            else:
+                y1new = y2new - height
+        else:
+            width = round(height * target_width_over_height)
+            if x2 > x1:
+                x2new = x1new + width
+            else:
+                x1new = x2new - width
+
+        # newwidth = int((x2new - x1new) * width_coeff)
+        # newheight = int((y2new - y1new) * height_coeff)
+        # x2new = x1new + newwidth
+        # y2new = y1new + newheight
+
+        self.STATE['x1'], self.STATE['y1'] = x1new, y1new
+        self.STATE['x2'], self.STATE['y2'] = x2new, y2new
+
+        # print("x1new, y1new, x2new, y2new: ", x1new, y1new, x2new, y2new)
+        return x1new, y1new, x2new, y2new
 
     def mouseMove(self, event):
         self.disp.config(text='x: %d, y: %d' % (event.x, event.y))
@@ -344,10 +420,17 @@ class LabelTool():
             if self.bboxId:
                 self.mainPanel.delete(self.bboxId)
             COLOR_INDEX = len(self.bboxIdList) % len(COLORS)
-            self.bboxId = self.mainPanel.create_rectangle(self.STATE['x'], self.STATE['y'], \
-                                                          event.x, event.y, \
-                                                          width=2, \
-                                                          outline=COLORS[COLOR_INDEX])
+
+            self.bboxId = self.mainPanel.create_rectangle(
+                *self.apply_aspect_ratio(self.STATE['x'], self.STATE['y'], event.x, event.y, self.init_params['aspect_ratio']),
+                width=2, \
+                outline=COLORS[COLOR_INDEX])
+            self.apply_aspect_ratio(self.STATE['x'], self.STATE['y'], event.x, event.y, self.init_params['aspect_ratio'])
+
+            # self.bboxId = self.mainPanel.create_rectangle(self.STATE['x'], self.STATE['y'], \
+            #                                               event.x, event.y, \
+            #                                               width=2, \
+            #                                               outline=COLORS[COLOR_INDEX])
 
     def select_box(self, box_index=-1):
         """ Visually selects the currently selected box """
@@ -385,11 +468,12 @@ class LabelTool():
                 self.bboxId = None
                 self.STATE['click'] = 0
 
-    def delBBox(self):
+    def delBBox(self, event=None):
         sel = self.listbox.curselection()
-        if len(sel) != 1:
-            return
-        idx = int(sel[0])
+        # if len(sel) != 1:
+        #     return
+        # idx = int(sel[0])
+        idx = int(sel[0]) if len(sel) == 1 else len(self.bboxIdList) - 1
         self.mainPanel.delete(self.bboxIdList[idx])
         self.bboxIdList.pop(idx)
         self.bboxList.pop(idx)
@@ -424,6 +508,9 @@ class LabelTool():
             self.saveImage()
             self.cur = idx
             self.loadImage()
+    def setClass(self):
+        self.currentLabelclass = self.classcandidate.get()
+        print('set label class to : %s' % self.currentLabelclass)            
 
     def setLabel(self):
         self.currentCaption = self.captionText.get()
@@ -518,14 +605,15 @@ class LabelTool():
 def arg_parser():
     parser = argparse.ArgumentParser("BBox Tool GUI")
     parser.add_argument("-l", "--label-mode", help="Specifies the label format. ", type=LabelMode,
-                        choices=list(LabelMode), default=LabelMode.plain)
+                        choices=list(LabelMode), default=LabelMode.json_single_file)
     parser.add_argument("-i", "--input-folder", help="Input folder containing images", type=str,
                         default=None)
     parser.add_argument("-o", "--output-folder", help="Output folder for storing labels", type=str,
                         default=None)
+    parser.add_argument("-a", "--aspect-ratio", type=int, nargs=2,
+                        help="Constrain width height aspect ratio of box")
 
     return parser
-
 
 if __name__ == '__main__':
     parser = arg_parser()
@@ -541,6 +629,7 @@ if __name__ == '__main__':
     print("STARTED")
 
     root = Tk()
-    tool = LabelTool(root, label_mode=args.label_mode, init_params={"img_folder": img_folder, "label_folder": label_folder})
+    tool = LabelTool(root, label_mode=args.label_mode, 
+    init_params={"img_folder": img_folder, "label_folder": label_folder, "aspect_ratio": args.aspect_ratio})
     root.resizable(width=True, height=True)
     root.mainloop()
