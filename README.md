@@ -32,11 +32,15 @@ python poxabel.py -i "path/input" -o "path/output" -a 1 1
 4. Press `L` or click `Load Dir` to load input images.
 
 5. Left-click to create the first corner of the region. Moving the mouse to draw a rectangle, and left-click again to create the second corner.
-  - To cancel the bounding box while drawing, just press `<BackSpace>`.
-  - To delete an existing bounding box, select from the listbox, and press or click `Delete`. Delete without selection will delete the last bounding box.
-  - To delete all existing bounding boxes in the image, simply click `ClearAll`.
+  - Press `<BackSpace>` to cancel the bounding box you are currently drawing.
+  - Select one region from the listbox, and press or click `Delete` to remove it. Delete without selection will delete the last bounding box.
+  - Click `ClearAll` to remove all bounding boxes of the current image.
 
-6. Press `RightArrow` or click `Next` to advance. Press `LeftArrow` or click `Prev` to reverse. Or, input an image number and click `Go` to navigate to the speficied image.
+6. Press `RightArrow` or click `Next` to advance. 
+
+Press `LeftArrow` or click `Prev` to reverse. 
+
+Or, input an image number and click `Go` to navigate to the speficied image.
 
 **Caveat**: Annotations are saved only after moving to another image. After finishing the last image, there is no more to load next. However, you still need to go next, or previous, to save the last annotation. 
 
