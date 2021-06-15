@@ -19,7 +19,7 @@ Optional command line argument
 
 `-o` outputdir -> specify output image folder. Annotation will be in a file `$inputdir-region.json` in this output folder. Default = folder Labels in current working directory
 
-`-à` width height -> constrain width to height aspect ratio
+`-a` width height -> constrain width to height aspect ratio
 
 ```bash
 python poxabel.py -i "path/input" -o "path/output" -a 1 1 
