@@ -17,7 +17,7 @@ Optional command line argument
 
 `-i` inputdir -> specify input image folder. Default = current working directory
 
-`-o` outputdir -> specify output image folder. Annotation will be in a file `$iputdir-region.json` in this output folder. Default = folder Labels in current working directory
+`-o` outputdir -> specify output image folder. Annotation will be in a file `$inputdir-region.json` in this output folder. Default = folder Labels in current working directory
 
 `-à` width height -> constrain width to height aspect ratio
 
@@ -44,7 +44,9 @@ python poxabel.py -i "path/input" -o "path/output" -a 1 1
 
 8. For multi-class task, modify 'class.txt' with your own class-candidates and before labeling bbox, choose the 'Current Class' in the Combobox and make sure you click `ComfirmClass` button.
 
-7. Support multiple image formats: `"*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"`.
+9. Retrieve the annotation files from output dir
+
+Support multiple image formats: `"*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"`.
 
 <br><br>
 This is a fork of https://github.com/idobrusin/BBox-Label-Tool
