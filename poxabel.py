@@ -105,7 +105,7 @@ class LabelTool():
         self.mainPanel = Canvas(self.frame, cursor='tcross')
         self.mainPanel.bind("<Button-1>", self.mouseClick)
         self.mainPanel.bind("<Motion>", self.mouseMove)
-        self.parent.bind("<Escape>", self.cancelBBox)  # press <Espace> to cancel current bbox
+        self.parent.bind("<BackSpace>", self.cancelBBox)  # press <Espace> to cancel current bbox
         # Disable key bindings to allow typing in text box!
         # self.parent.bind("s", self.cancelBBox)
         
@@ -153,6 +153,8 @@ class LabelTool():
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
         self.ctrPanel.grid(row=6, column=1, columnspan=2, sticky=W + E)
+        self.imagenameLabel = Label(self.ctrPanel, text="Image Name")
+        self.imagenameLabel.pack(side=LEFT, padx=5)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev', width=10, command=self.prevImage)
         self.prevBtn.pack(side=LEFT, padx=5, pady=3)
         self.nextBtn = Button(self.ctrPanel, text='Next >>', width=10, command=self.nextImage)
@@ -254,6 +256,7 @@ class LabelTool():
         fullfilename = os.path.basename(imagepath)
         # self.imagename, _ = os.path.splitext(fullfilename)
         basepath, self.imagename = os.path.split(fullfilename)
+        self.imagenameLabel.config(text=self.imagename)
 
         boxes = []
 
@@ -374,26 +377,28 @@ class LabelTool():
     def apply_aspect_ratio(self, x1, y1, x2, y2, aspect_ratio):
         # width_coeff = aspect_ratio[0] / aspect_ratio[1] if aspect_ratio[0] > aspect_ratio[1] else 1
         # height_coeff = 1 if aspect_ratio[0] > aspect_ratio[1] else aspect_ratio[1] / aspect_ratio[0]
-        target_width_over_height = aspect_ratio[0] / aspect_ratio[1]
         # print('aspect ratio: ', width_coeff, height_coeff)
 
         x1new = min(x1, x2); y1new = min(y1, y2)
         x2new = max(x1, x2); y2new = max(y1, y2)
 
-        width = x2new - x1new; height = y2new - y1new
+        if aspect_ratio:
 
-        if float(width) / float(height) > target_width_over_height:
-            height = round(width / target_width_over_height)
-            if y2 > y1:
-                y2new = y1new + height
+            target_width_over_height = aspect_ratio[0] / aspect_ratio[1]
+            width = x2new - x1new; height = y2new - y1new
+
+            if float(width) / float(height) > target_width_over_height:
+                height = round(width / target_width_over_height)
+                if y2 > y1:
+                    y2new = y1new + height
+                else:
+                    y1new = y2new - height
             else:
-                y1new = y2new - height
-        else:
-            width = round(height * target_width_over_height)
-            if x2 > x1:
-                x2new = x1new + width
-            else:
-                x1new = x2new - width
+                width = round(height * target_width_over_height)
+                if x2 > x1:
+                    x2new = x1new + width
+                else:
+                    x1new = x2new - width
 
         # newwidth = int((x2new - x1new) * width_coeff)
         # newheight = int((y2new - y1new) * height_coeff)
@@ -571,9 +576,10 @@ class LabelTool():
             try:
                 data = json.load(f)
             except json.decoder.JSONDecodeError:
-                data = {}
+                # data = {}
+                return {}
         # Convert list to dict: {id: {regions:{...}}} for easier data manipulation
-        for entry in data:
+        for entry in data["annotation"]:
             regions_all_images[entry["id"]] = entry["regions"]
         return regions_all_images
 
