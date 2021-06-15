@@ -46,7 +46,7 @@ python poxabel.py -i "path/input" -o "path/output" -a 1 1
 
 7. Support multiple image formats: `"*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"`.
 
-
+<br><br>
 This is a fork of https://github.com/idobrusin/BBox-Label-Tool
 
 A simple tool for labeling object bounding boxes in images, implemented with Python Tkinter.
