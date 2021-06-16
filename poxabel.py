@@ -42,7 +42,6 @@ class LabelTool():
         # initialize global state
         self.init_params = init_params
         self.imageDir = ''
-        self.imageList = []
         self.egDir = ''
         self.egList = []
         self.outDir = ''
@@ -200,6 +199,7 @@ class LabelTool():
         # get image list
         # self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
         self.imageDir = self.svSourcePath.get()
+        self.imageList = []
         if not os.path.isdir(self.imageDir):
             messagebox.showerror("Error!", message="The specified dir doesn't exist!")
             return
@@ -375,15 +375,11 @@ class LabelTool():
         self.STATE['click'] = 1 - self.STATE['click']
 
     def apply_aspect_ratio(self, x1, y1, x2, y2, aspect_ratio):
-        # width_coeff = aspect_ratio[0] / aspect_ratio[1] if aspect_ratio[0] > aspect_ratio[1] else 1
-        # height_coeff = 1 if aspect_ratio[0] > aspect_ratio[1] else aspect_ratio[1] / aspect_ratio[0]
-        # print('aspect ratio: ', width_coeff, height_coeff)
-
         x1new = min(x1, x2); y1new = min(y1, y2)
         x2new = max(x1, x2); y2new = max(y1, y2)
 
-        if aspect_ratio:
-
+        # case of constraining aspect ration
+        if (aspect_ratio[0] * aspect_ratio[1] != 0):
             target_width_over_height = aspect_ratio[0] / aspect_ratio[1]
             width = x2new - x1new; height = y2new - y1new
 
@@ -400,10 +396,6 @@ class LabelTool():
                 else:
                     x1new = x2new - width
 
-        # newwidth = int((x2new - x1new) * width_coeff)
-        # newheight = int((y2new - y1new) * height_coeff)
-        # x2new = x1new + newwidth
-        # y2new = y1new + newheight
 
         self.STATE['x1'], self.STATE['y1'] = x1new, y1new
         self.STATE['x2'], self.STATE['y2'] = x2new, y2new
@@ -616,7 +608,7 @@ def arg_parser():
                         default=None)
     parser.add_argument("-o", "--output-folder", help="Output folder for storing labels", type=str,
                         default=None)
-    parser.add_argument("-a", "--aspect-ratio", type=int, nargs=2,
+    parser.add_argument("-a", "--aspect-ratio", type=int, nargs=2, default=[1,1],
                         help="Constrain width height aspect ratio of box")
 
     return parser
