@@ -15,11 +15,11 @@ python poxabel.py
 ```
 Optional command line argument
 
-`-i` inputdir -> specify input image folder. Default = current working directory
+`-i inputdir` -> specify input image folder. Default = current working directory
 
-`-o` outputdir -> specify output image folder. Annotation will be in a file `$inputdir-region.json` in this output folder. Default = folder Labels in current working directory
+`-o outputdir` -> specify output image folder. Annotation will be in a file `$inputdir-region.json` in this output folder. Default = folder Labels in current working directory
 
-`-a` width height -> constrain width to height aspect ratio. Default = 1 1. Change either to 0 for unconstrained.
+`-a width height` -> constrain width to height aspect ratio. Default = 1 1. Change either to 0 for unconstrained.
 
 ```bash
 python poxabel.py -i "path/input" -o "path/output" -a 1 1 
