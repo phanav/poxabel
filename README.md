@@ -19,7 +19,7 @@ Optional command line argument
 
 `-o` outputdir -> specify output image folder. Annotation will be in a file `$inputdir-region.json` in this output folder. Default = folder Labels in current working directory
 
-`-a` width height -> constrain width to height aspect ratio
+`-a` width height -> constrain width to height aspect ratio. Default = 1 1. Change either to 0 for unconstrained.
 
 ```bash
 python poxabel.py -i "path/input" -o "path/output" -a 1 1 
@@ -50,12 +50,25 @@ Or, input an image number and click `Go` to navigate to the speficied image.
 
 9. Retrieve the annotation files from output dir
 
-Support multiple image formats: `"*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"`.
+## Rectify
+Keep related annotation output files in the same folder for easier reloading.
 
-<br><br>
-This is a fork of https://github.com/idobrusin/BBox-Label-Tool
+While drawing the regions, navigating to any previously annotated images will load your previous annotations.
+You can delete a saved bounding box and draw a new one.
 
-A simple tool for labeling object bounding boxes in images, implemented with Python Tkinter.
+## Review
+Suppose you finish annotating all images in input dir `inputpath/apple`. Annotations are saved in `apple-region.json` inside `outputpath/Labels`.
+
+Now, you press `I` and change input folder to `inputpath/orange`. Annotations are saved in `orange-region.json` inside `outputpath/Labels`.
+
+To review apple annotations, switch input dir back to `inputpath/apple`. Leave output dir as `outputpath/Labels`.
+You can then review and rectify the previous apple annotations.
+
+## Resume
+Suppose you interrupt annotation at orange image 10/20.
+Note the image number, the input dir and output dir.
+
+To resume, start the program again with the same input dir and output dir, then jump to image number 10. Use the navigation at the bottom.
 
 
 Repository Structure
@@ -81,3 +94,10 @@ Python 3.6.5
 >>> PIL.__version__
 '4.2.1'
 ```
+
+<br>
+Support multiple image formats: `"*.JPEG", "*.jpeg", "*JPG", "*.jpg", "*.PNG", "*.png", "*.BMP", "*.bmp"`.
+<br><br>
+This is a fork of https://github.com/idobrusin/BBox-Label-Tool
+
+A simple tool for labeling object bounding boxes in images, implemented with Python Tkinter.
