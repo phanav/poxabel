@@ -51,12 +51,12 @@ Or, input an image number and click `Go` to navigate to the speficied image.
 9. Retrieve the annotation files from output dir
 
 ## Rectify
-Keep related annotation output files in the same folder for easier reloading.
-
 While drawing the regions, navigating to any previously annotated images will load your previous annotations.
 You can delete a saved bounding box and draw a new one.
 
 ## Review
+Keep related annotation output files in the same folder for easier reloading.
+
 Suppose you finish annotating all images in input dir `inputpath/apple`. Annotations are saved in `apple-region.json` inside `outputpath/Labels`.
 
 Now, you press `I` and change input folder to `inputpath/orange`. Annotations are saved in `orange-region.json` inside `outputpath/Labels`.
